@@ -1,0 +1,129 @@
+#!/usr/bin/env node
+
+/**
+ * Module dependencies.
+ */
+
+var app = require('../app');
+var debug = require('debug')('simple-example:server');
+var http = require('http');
+
+/**
+ * Get port from environment and store in Express.
+ */
+
+var port = normalizePort(process.env.PORT || '9000');
+app.set('port', port);
+
+/**
+ * Create HTTP server.
+ */
+
+var server = http.createServer(app);
+
+// Socket IO
+const io = require('socket.io')(server, {
+  cors: {
+    origin: true,
+    credentials: true,
+  },
+});
+
+// Cấu hình các event
+io.on('connection', (socket) => {
+  console.log('SOCKET IS CONNECTED');
+  // console.log('🚀', socket);
+
+  // Lắng nghe sự kiện từ client
+  socket.on('client-message', (data) => {
+    if (data.type === 'join') {
+      socket.join(data.room);
+      io.to(data.room).emit('server-message', { message: 'Join room is successful' }); // all
+    } else if (data.type === 'chat') {
+      // Emit to clients
+      io.emit('server-message', data); // all
+      // socket.emit('server-message', data); // only send client
+    } else if (data.type === 'quiz') {
+      io.emit('server-message', data); // all
+    } else if (data.type === 'quiz-answer') {
+      io.emit('server-message', data); // all
+    } else {
+      console.log('Other', data);
+      // echo to client
+      console.log('client-message', data);
+      // Save to database
+
+      // Emit to clients
+      io.emit('server-message', data); // all
+      // socket.emit('server-message', data); // only send client
+    }
+  });
+
+  socket.on('disconnect', () => {
+    io.emit('user disconnected');
+  });
+});
+
+/**
+ * Listen on provided port, on all network interfaces.
+ */
+
+server.listen(port);
+server.on('error', onError);
+server.on('listening', onListening);
+
+/**
+ * Normalize a port into a number, string, or false.
+ */
+
+function normalizePort(val) {
+  var port = parseInt(val, 10);
+
+  if (isNaN(port)) {
+    // named pipe
+    return val;
+  }
+
+  if (port >= 0) {
+    // port number
+    return port;
+  }
+
+  return false;
+}
+
+/**
+ * Event listener for HTTP server "error" event.
+ */
+
+function onError(error) {
+  if (error.syscall !== 'listen') {
+    throw error;
+  }
+
+  var bind = typeof port === 'string' ? 'Pipe ' + port : 'Port ' + port;
+
+  // handle specific listen errors with friendly messages
+  switch (error.code) {
+    case 'EACCES':
+      console.error(bind + ' requires elevated privileges');
+      process.exit(1);
+      break;
+    case 'EADDRINUSE':
+      console.error(bind + ' is already in use');
+      process.exit(1);
+      break;
+    default:
+      throw error;
+  }
+}
+
+/**
+ * Event listener for HTTP server "listening" event.
+ */
+
+function onListening() {
+  var addr = server.address();
+  var bind = typeof addr === 'string' ? 'pipe ' + addr : 'port ' + addr.port;
+  debug('Listening on ' + bind);
+}

@@ -1,0 +1,22 @@
+[
+  {
+    "id": 1,
+    "name": "CPU",
+    "description": "Các loại CPU cho máy tính"
+  },
+  {
+    "id": 3,
+    "name": "RAM",
+    "description": "Các loại ram cho máy tính"
+  },
+  {
+    "id": 10,
+    "name": "SSD",
+    "description": "Đĩa cứng SSD"
+  },
+  {
+    "id": 12,
+    "name": "Fashion",
+    "description": "Mô tả ..."
+  }
+]

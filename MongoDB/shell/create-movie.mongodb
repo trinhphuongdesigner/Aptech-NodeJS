@@ -1,0 +1,8 @@
+// Select the database to use.
+use('training-database');
+
+// Insert a few documents into the sales collection.
+db.categories.insertOne({
+  name: "Điện thoại",
+  description: "Mô tả điện thoại ..."
+});
