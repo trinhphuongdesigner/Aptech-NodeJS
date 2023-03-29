@@ -333,7 +333,7 @@ router.get('/15', function (req, res, next) {
 // ------------------------------------------------------------------------------------------------
 router.get('/25', async (req, res, next) => {
   try {
-    const aggregate = [
+    const option = [
       {
         $lookup: {
           from: 'orders',
@@ -353,15 +353,16 @@ router.get('/25', async (req, res, next) => {
           name: 1,
           price: 1,
           stock: 1,
+          categoryId: 1,
         }
       }
     ];
 
-    Product.aggregate(aggregate)
+    Product.aggregate(option)
       .then((result) => {
         res.send({
-          payload: result,
           total: result.length,
+          payload: result,
         });
       })
       .catch((err) => {
@@ -372,53 +373,48 @@ router.get('/25', async (req, res, next) => {
   }
 });
 
-// router.get('/25', async (req, res, next) => {
-//   try {
-//     Product.aggregate()
-//       .lookup({
-//         from: 'orders', localField: '_id', foreignField: 'orderDetails.productId', as: 'orders',
-//       })
-//       .match({
-//         orders: { $size: 0 },
-//       })
-//       .project({
-//         id: 1,
-//         name: 1,
-//         price: 1,
-//         stock: 1,
-//       })
-//       .then((result) => {
-//           res.send({
-//             payload: result,
-//             total: result.length,
-//           });
-//       })
-//       .catch((err) => {
-//         res.status(400).send({ message: err.message });
-//       });
-//   } catch (error) {
-//     res.sendStatus(500);
-//   }
-// });
+router.get('/25b', async (req, res, next) => {
+  try {
+    Product.aggregate()
+      .lookup({
+        from: 'orders', localField: '_id', foreignField: 'orderDetails.productId', as: 'orders',
+      })
+      .match({
+        orders: { $size: 0 },
+      })
+      .project({
+        id: 1,
+        name: 1,
+        price: 1,
+        stock: 1,
+      })
+      .then((result) => {
+          res.send({
+            payload: result,
+            total: result.length,
+          });
+      })
+      .catch((err) => {
+        res.status(400).send({ message: err.message });
+      });
+  } catch (error) {
+    res.sendStatus(500);
+  }
+});
 
 // QUESTIONS 26a
 // Hiển thị tất cả các nhà cung cấp không bán được hàng
 
 router.get('/26a', async (req, res, next) => {
   try {
-    const aggregate = [
-      {
-        $lookup: {
-          from: 'orders',
-          localField: '_id',
-          foreignField: 'orderDetails.productId',
-          as: 'orders',
-        },
-      },
-      { $match: { orders: { $size: 0 } } },
-    ];
-
-    Product.aggregate(aggregate)
+    Product.aggregate()
+      .lookup({
+        from: 'orders',
+        localField: '_id',
+        foreignField: 'orderDetails.productId',
+        as: 'orders',
+      })
+      .match({ orders: { $size: 0 } })
       .lookup({
         from: 'suppliers',
         localField: 'supplierId',
@@ -433,15 +429,12 @@ router.get('/26a', async (req, res, next) => {
         path: '$suppliers',
         preserveNullAndEmptyArrays: true,
       })
-      .addFields({
+      .project({
         _id: '$suppliers._id',
         name: '$suppliers.name',
         email: '$suppliers.email',
         phoneNumber: '$suppliers.phoneNumber',
         address: '$suppliers.address',
-      })
-      .project({
-        suppliers: 0,
       })
       .group({
         _id: '$_id',
@@ -500,13 +493,6 @@ router.get('/26b', async (req, res, next) => {
       .project({
         suppliers: 0,
       })
-      // .project({
-      //   _id: '$suppliers._id',
-      //   name: '$suppliers.name',
-      //   email: '$suppliers.email',
-      //   phoneNumber: '$suppliers.phoneNumber',
-      //   address: '$suppliers.address',
-      // })
       .group({
         _id: '$_id',
         name: { $first: '$name' },
@@ -531,18 +517,11 @@ router.get('/26b', async (req, res, next) => {
 
 router.get('/26c', async (req, res, next) => {
   try {
-    let { fromDate, toDate } = req.query.fromDate;
+    let { fromDate, toDate } = req.query;
     fromDate = new Date(fromDate);
 
     const tmpToDate = new Date(toDate);
     toDate = new Date(tmpToDate.setDate(tmpToDate.getDate() + 1));
-
-    const compareFromDate = { $lte: ['$orders.createdDate', fromDate] };
-    const compareToDate = { $gte: ['$orders.createdDate', toDate] };
-
-    const conditionFind = {
-      $expr: { $or: [compareFromDate, compareToDate] },
-    };
 
     Product.aggregate()
       .lookup({
@@ -555,10 +534,24 @@ router.get('/26c', async (req, res, next) => {
         path: '$orders',
         preserveNullAndEmptyArrays: true,
       })
-      .match(conditionFind)
-      // .match({
-      //   orders: { $exists: false },
-      // })
+      .match({
+        $or: [
+          {
+            $and: [
+              {orders : { $ne: null}},
+              {
+                $or: [
+                  {'orders.createdDate': { $lte: fromDate }},
+                  {'orders.createdDate': { $gte: toDate }},
+                ]
+              }
+            ]
+          },
+          {
+            orders: null 
+          }
+        ]
+      })
       .lookup({
         from: 'suppliers',
         localField: 'supplierId',
