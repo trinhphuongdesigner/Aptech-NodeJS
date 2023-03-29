@@ -2,10 +2,10 @@ POST http://localhost:9000/products HTTP/1.1
 content-type: application/json
 
 {
-   "name": "Máy giặt Samsung 10 lit",
-   "price": 100,
-   "discount": 10,
-   "stock": 100,
-   "categoryId": "641847625916114fb90e61ca",
-   "supplierId": "6418540f029c6a147f5c7b18"
+   "name": "Điện thoại Samsung 2",
+   "price": 300,
+   "discount": 50,
+   "stock": 1000,
+   "categoryId": "6422fa4810807c4703b7153b",
+   "supplierId": "6422f9bd10807c4703b71532"
 }

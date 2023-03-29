@@ -1,7 +1,7 @@
 const yup = require('yup');
 const express = require('express');
 const router = express.Router();
-const { Product } = require('../models');
+const { Product, Category, Supplier } = require('../models');
 const ObjectId = require('mongodb').ObjectId;
 
 // Methods: POST / PATCH / GET / DELETE / PUT
@@ -46,6 +46,13 @@ router.post('/', function (req, res, next) {
     .validate({ body: req.body }, { abortEarly: false })
     .then(async () => {
       const data = req.body;
+
+      // let category = await Category.findOne({ _id: data.categoryId });
+      // if (!category) return res.status(404).json({ message: 'Not found' });
+
+      // let supplier = await Supplier.findOne({ _id: data.supplierId });
+      // if (!supplier) return res.status(404).json({ message: 'Not found' });
+
       let newItem = new Product(data);
       await newItem.save();
       res.send({ ok: true, message: 'Created', result: newItem });
