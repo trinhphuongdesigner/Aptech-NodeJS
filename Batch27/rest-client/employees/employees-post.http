@@ -1,0 +1,10 @@
+POST http://localhost:9000/employees HTTP/1.1
+content-type: application/json
+
+{ 
+   "firstName": "Nhan vien", 
+   "lastName": "B",
+   "email": "nhanvienb@gmail.com",
+   "phoneNumber": "0386592666",
+   "address": "04 ha huy tap"
+}

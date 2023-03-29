@@ -1,16 +1,100 @@
+const { CONNECTION_STRING } = require('../constants/dbSettings');
+const { default: mongoose } = require('mongoose');
+
+const { Employee } = require('../models');
+// MONGOOSE
+mongoose.set('strictQuery', false);
+mongoose.connect(CONNECTION_STRING);
+
 var express = require('express');
+
 var router = express.Router();
 
-const data = [
-  { id: 1, name: 'Mary', email: 'mary@gmail.com', gender: 'female' },
-  { id: 2, name: 'Honda', email: 'honda@gmail.com', gender: 'male' },
-  { id: 3, name: 'Suzuki', email: 'suzuki@gmail.com', gender: 'male' },
-];
-
-// Methods: POST / PATCH / GET / DELETE / PUT
-// Get all
+// GET
 router.get('/', function (req, res, next) {
-  res.send(data);
+  try {
+    Employee.find()
+      .then((result) => {
+        res.send(result);
+      })
+      .catch((err) => {
+        res.status(400).send({ message: err.message });
+      });
+  } catch (err) {
+    res.sendStatus(500);
+  }
+});
+
+// GET:/id
+router.get('/:id', function (req, res, next) {
+  try {
+    const { id } = req.params;
+    Employee.findById(id)
+      .then((result) => {
+        res.send(result);
+      })
+      .catch((err) => {
+        res.status(400).send({ message: err.message });
+      });
+  } catch (err) {
+    res.sendStatus(500);
+  }
+});
+
+// POST
+router.post('/', function (req, res, next) {
+  try {
+    const data = req.body;
+
+    const newItem = new Employee(data);
+    newItem
+      .save()
+      .then((result) => {
+        res.send(result);
+      })
+      .catch((err) => {
+        console.log(err);
+        res.status(400).send({ message: err.message });
+      });
+  } catch (err) {
+    res.sendStatus(500);
+  }
+});
+
+// PATCH/:id
+router.patch('/:id', function (req, res, next) {
+  try {
+    const { id } = req.params;
+    const data = req.body;
+
+    Employee.findByIdAndUpdate(id, data, {
+      new: true,
+    })
+      .then((result) => {
+        res.send(result);
+      })
+      .catch((err) => {
+        res.status(400).send({ message: err.message });
+      });
+  } catch (error) {
+    res.sendStatus(500);
+  }
+});
+
+// DELETE
+router.delete('/:id', function (req, res, next) {
+  try {
+    const { id } = req.params;
+    Employee.findByIdAndDelete(id)
+      .then((result) => {
+        res.send(result);
+      })
+      .catch((err) => {
+        res.status(400).send({ message: err.message });
+      });
+  } catch (err) {
+    res.sendStatus(500);
+  }
 });
 
 module.exports = router;

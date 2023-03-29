@@ -2,9 +2,14 @@ POST http://localhost:9000/orders HTTP/1.1
 content-type: application/json
 
 { 
+   "shippedDate": "2023-4-1",
+   "paymentType": "CASH",
+   "status": "WAITING",
+   "customerId": "6423e5208499da0b7a2ebc1d",
+   "employeeId": "6423e5fcb0312f0dfd85cc74",
    "orderDetails": [
       {
-         "productId": "641855d91b1f561dea8308e7",
+         "productId": "6422faee10807c4703b71545",
          "price": 100,
          "discount": 10,
          "quantity": 1

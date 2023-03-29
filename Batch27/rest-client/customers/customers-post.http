@@ -1,0 +1,11 @@
+POST http://localhost:9000/customers HTTP/1.1
+content-type: application/json
+
+{ 
+   "firstName": "Nguyen", 
+   "lastName": "Van B",
+   "email": "atd@gmail.com",
+   "phoneNumber": "0386592333",
+   "address": "340 dien bien phu",
+   "birthday": "1990-2-2"
+}

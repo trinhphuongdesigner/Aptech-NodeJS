@@ -18,6 +18,34 @@ router.get('/', async (req, res, next) => {
   }
 });
 
+// Get by id
+router.get('/:id', async (req, res, next) => {
+  const validationSchema = yup.object().shape({
+    params: yup.object({
+      id: yup.string().test('Validate ObjectID', '${path} is not valid ObjectID', (value) => {
+        return ObjectId.isValid(value);
+      }),
+    }),
+  });
+  
+
+  validationSchema.validate({ params: req.params }, { abortEarly: false })
+  .then(async () => {
+    const { id } = req.params;
+
+    let results = await Product.findById(id).populate('category').populate('supplier').lean({ virtuals: true });
+
+    if (results) {
+      return res.send({ ok: true, result: results });
+    }
+
+    return res.send({ ok: false, message: 'Object not found' });
+  })
+  .catch((err) => {
+    return res.status(400).json({ type: err.name, errors: err.errors, message: err.message, provider: 'yup' });
+  });
+});
+
 // ------------------------------------------------------------------------------------------------
 // Create new data
 router.post('/', function (req, res, next) {

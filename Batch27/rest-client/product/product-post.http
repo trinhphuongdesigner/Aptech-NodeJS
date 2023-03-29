@@ -2,9 +2,9 @@ POST http://localhost:9000/products HTTP/1.1
 content-type: application/json
 
 {
-   "name": "Điện thoại Samsung 2",
-   "price": 300,
-   "discount": 50,
+   "name": "Điện thoại Samsung 4",
+   "price": 100000,
+   "discount": 10,
    "stock": 1000,
    "categoryId": "6422fa4810807c4703b7153b",
    "supplierId": "6422f9bd10807c4703b71532"

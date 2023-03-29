@@ -1,0 +1,2 @@
+GET http://localhost:9000/questions/8a?status=WAITING&date=2023-03-28 HTTP/1.1
+content-type: application/json
