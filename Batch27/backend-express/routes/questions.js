@@ -305,6 +305,38 @@ router.get('/8b', function (req, res, next) {
   }
 });
 
+// QUESTIONS 13 http://localhost:9000/questions/13?address=340
+// Hiển thị tất cả các đơn hàng có địa chỉ giao hàng là Hà Nội
+
+router.get('/13', function (req, res, next) {
+  try {
+    let address = req.query.address;
+
+    Order.aggregate()
+      .lookup({
+        from: 'customers',
+        localField: 'customerId',
+        foreignField: '_id',
+        as: 'customer',
+      })
+      .unwind('customer')
+      .match({
+        'customer.address': new RegExp(address),
+      })
+      .project({
+        customerId: 0,
+      })
+      .then((result) => {
+        res.send(result);
+      })
+      .catch((err) => {
+        res.status(400).send({ message: err.message });
+      });
+  } catch (err) {
+    res.sendStatus(500);
+  }
+});
+
 // QUESTIONS 15 http://localhost:9000/questions/15?supplierNames=Apple&supplierNames=SONY
 // Hiển thị tất cả các nhà cung cấp có tên là: (SONY, SAMSUNG, TOSHIBA, APPLE)
 
@@ -354,8 +386,8 @@ router.get('/25', async (req, res, next) => {
           price: 1,
           stock: 1,
           categoryId: 1,
-        }
-      }
+        },
+      },
     ];
 
     Product.aggregate(option)
@@ -377,7 +409,10 @@ router.get('/25b', async (req, res, next) => {
   try {
     Product.aggregate()
       .lookup({
-        from: 'orders', localField: '_id', foreignField: 'orderDetails.productId', as: 'orders',
+        from: 'orders',
+        localField: '_id',
+        foreignField: 'orderDetails.productId',
+        as: 'orders',
       })
       .match({
         orders: { $size: 0 },
@@ -389,10 +424,10 @@ router.get('/25b', async (req, res, next) => {
         stock: 1,
       })
       .then((result) => {
-          res.send({
-            payload: result,
-            total: result.length,
-          });
+        res.send({
+          payload: result,
+          total: result.length,
+        });
       })
       .catch((err) => {
         res.status(400).send({ message: err.message });
@@ -538,19 +573,19 @@ router.get('/26c', async (req, res, next) => {
         $or: [
           {
             $and: [
-              {orders : { $ne: null}},
+              { orders: { $ne: null } },
               {
                 $or: [
-                  {'orders.createdDate': { $lte: fromDate }},
-                  {'orders.createdDate': { $gte: toDate }},
-                ]
-              }
-            ]
+                  { 'orders.createdDate': { $lte: fromDate } },
+                  { 'orders.createdDate': { $gte: toDate } },
+                ],
+              },
+            ],
           },
           {
-            orders: null 
-          }
-        ]
+            orders: null,
+          },
+        ],
       })
       .lookup({
         from: 'suppliers',
