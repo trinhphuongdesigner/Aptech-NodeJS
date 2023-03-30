@@ -1,2 +1,2 @@
-GET http://localhost:9000/questions/13?address=340 HTTP/1.1
+GET http://localhost:9000/questions/22?fromDate=2023-03-27&toDate=2023-04-29 HTTP/1.1
 content-type: application/json

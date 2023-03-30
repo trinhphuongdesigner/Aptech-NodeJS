@@ -19,6 +19,7 @@ router.get('/', async (req, res, next) => {
 router.post('/', async function (req, res, next) {
   try {
     const data = req.body;
+
     const newItem = new Order(data);
     let result = await newItem.save();
 

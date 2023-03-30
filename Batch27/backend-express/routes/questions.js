@@ -359,6 +359,77 @@ router.get('/15', function (req, res, next) {
   }
 });
 
+// QUESTIONS 22 http://localhost:9000/questions/22?fromDate=2023-03-27&toDate=2023-03-29
+// Hiển thị tất cả các khách hàng mua hàng (với tổng số tiền) trong khoảng từ ngày, đến ngày
+
+router.get('/22', function (req, res, next) {
+  try {
+    let { fromDate, toDate } = req.query;
+
+    fromDate = new Date(fromDate);
+
+    const tmpToDate = new Date(toDate);
+    toDate = new Date(tmpToDate.setDate(tmpToDate.getDate() + 1));
+
+    const compareFromDate = { $gte: ['$createdDate', fromDate] };
+    const compareToDate = { $lt: ['$createdDate', toDate] };
+
+    const query = {
+      $expr: { $and: [compareFromDate, compareToDate] },
+    };
+
+    // const s = { $subtract: [100, '$orderDetails.discount'] };
+
+    // const m = { $multiply: ['$orderDetails.price', s] };
+
+    // const d = { $divide: [m, 100] };
+
+    Order.aggregate()
+      .lookup({
+        from: 'customers',
+        localField: 'customerId',
+        foreignField: '_id',
+        as: 'customer',
+      })
+      .match(query)
+      .unwind('customer')
+      .unwind('orderDetails')
+      .addFields({
+        originalPrice: {
+          $divide: [
+            {
+              $multiply: [
+                '$orderDetails.price',
+                { $subtract: [100, '$orderDetails.discount'] },
+              ],
+            },
+            100,
+          ],
+        },
+      })
+      .group({
+        _id: '$customer._id',
+        firstName: { $first: '$customer.firstName' },
+        lastName: { $first: '$customer.lastName' },
+        email: { $first: '$customer.email' },
+        phoneNumber: { $first: '$customer.phoneNumber' },
+        address: { $first: '$customer.address' },
+        birthday: { $first: '$customer.birthday' },
+        total_sales: {
+          $sum: { $multiply: ['$originalPrice', '$orderDetails.quantity'] },
+        },
+      })
+      .then((result) => {
+        res.send(result);
+      })
+      .catch((err) => {
+        res.status(400).send({ message: err.message });
+      });
+  } catch (err) {
+    res.sendStatus(500);
+  }
+});
+
 // ------------------------------------------------------------------------------------------------
 // QUESTIONS 25
 // Hiển thị tất cả các mặt hàng không bán được
