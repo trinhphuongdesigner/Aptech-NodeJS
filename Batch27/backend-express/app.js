@@ -4,10 +4,14 @@ const path = require('path');
 const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 const cors = require('cors');
+const passport = require('passport');
+require('dotenv').config()
 
 // MONGOOSE
 const { default: mongoose } = require('mongoose');
 const { CONNECTION_STRING } = require('./constants/dbSettings');
+
+const passportConfig = require('./middlewares/passport');
 
 // IMPORTS
 const indexRouter = require('./routes/index');
@@ -42,6 +46,8 @@ app.use(
 // MONGOOSE
 mongoose.set('strictQuery', false);
 mongoose.connect(CONNECTION_STRING);
+
+passport.use(passportConfig);
 
 // REGISTER ROUTERS
 app.use('/', indexRouter);

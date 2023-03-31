@@ -1,9 +1,10 @@
 const yup = require('yup');
 const express = require('express');
 const router = express.Router();
-const { Category } = require('../models');
 const ObjectId = require('mongodb').ObjectId;
 
+const { Category } = require('../models');
+const { validateSchema, loginSchema, categorySchema } = require('../validation/employee');
 // Methods: POST / PATCH / GET / DELETE / PUT
 // Get all
 router.get('/', async (req, res, next) => {
@@ -15,33 +16,53 @@ router.get('/', async (req, res, next) => {
   }
 });
 
-router.get('/:id', async function (req, res, next) {
+router.get('/:id', validateSchema(categorySchema),  async (req, res, next) => {
   // Validate
-  const validationSchema = yup.object().shape({
-    params: yup.object({
-      id: yup.string().test('Validate ObjectID', '${path} is not valid ObjectID', (value) => {
-        return ObjectId.isValid(value);
-      }),
-    }),
-  });
+  try {
+    const { id } = req.params;
 
-  validationSchema
-    .validate({ params: req.params }, { abortEarly: false })
-    .then(async () => {
-      const id = req.params.id;
+    let found = await Category.findById(id);
 
-      let found = await Category.findById(id);
+    if (found) {
+      return res.send({ ok: true, result: found });
+    }
 
-      if (found) {
-        return res.send({ ok: true, result: found });
-      }
-
-      return res.send({ ok: false, message: 'Object not found' });
-    })
-    .catch((err) => {
-      return res.status(400).json({ type: err.name, errors: err.errors, message: err.message, provider: 'yup' });
+    return res.send({ ok: false, message: 'Object not found' });
+  } catch (err) {
+    res.status(401).json({
+      statusCode: 401,
+      message: 'Unauthorized',
     });
+  }
 });
+
+// router.get('/:id', async function (req, res, next) {
+//   // Validate
+//   const validationSchema = yup.object().shape({
+//     params: yup.object({
+//       id: yup.string().test('Validate ObjectID', '${path} is not valid ObjectID', (value) => {
+//         return ObjectId.isValid(value);
+//       }),
+//     }),
+//   });
+
+//   validationSchema
+//     .validate({ params: req.params }, { abortEarly: false })
+//     .then(async () => {
+//       const id = req.params.id;
+
+//       let found = await Category.findById(id);
+
+//       if (found) {
+//         return res.send({ ok: true, result: found });
+//       }
+
+//       return res.send({ ok: false, message: 'Object not found' });
+//     })
+//     .catch((err) => {
+//       return res.status(400).json({ type: err.name, errors: err.errors, message: err.message, provider: 'yup' });
+//     });
+// });
 
 // Create new data
 router.post('/', async function (req, res, next) {

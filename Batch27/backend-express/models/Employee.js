@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const { Schema, model } = mongoose;
+const bcrypt = require('bcryptjs');
 
 // Mongoose Datatypes:
 // https://mongoosejs.com/docs/schematypes.html
@@ -34,6 +35,7 @@ const employeeSchema = new Schema(
         // message: (props) => `{props.value} is not a valid email!`,
       },
     },
+    password: { type: String, required: true },
     address: { type: String, required: true },
     birthday: { type: Date },
   },
@@ -46,6 +48,29 @@ const employeeSchema = new Schema(
 employeeSchema.virtual('fullName').get(function () {
   return this.firstName + ' ' + this.lastName;
 });
+
+
+// employeeSchema.pre('save', function a(next) {
+//   const user = this;
+
+//   if (!user.isModified('password')) return next();
+
+//   bcrypt.genSalt(10, (err, salt) => {
+//     if (err) return next(err);
+
+//     bcrypt.hash(user.password, salt, (hashErr, hash) => {
+//       if (hashErr) return next(hashErr);
+
+//       user.password = hash;
+//       next();
+//     });
+//   });
+// });
+
+// // Check password from client
+// employeeSchema.methods.comparePassword = function comparePassword(checkPassword) {
+//   return bcrypt.compareSync(checkPassword, this.password);
+// };
 
 const Employee = model('Employee', employeeSchema);
 module.exports = Employee;

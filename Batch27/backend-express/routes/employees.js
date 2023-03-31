@@ -1,14 +1,67 @@
+const passport = require('passport');
+const express = require('express');
+
 const { CONNECTION_STRING } = require('../constants/dbSettings');
 const { default: mongoose } = require('mongoose');
-
 const { Employee } = require('../models');
+const { validateSchema, loginSchema, categorySchema } = require('../validation/employee');
+const encodeToken = require('../helpers/jwtHelper');
+
 // MONGOOSE
 mongoose.set('strictQuery', false);
 mongoose.connect(CONNECTION_STRING);
 
-var express = require('express');
+const router = express.Router();
 
-var router = express.Router();
+router.post('/login', validateSchema(loginSchema), async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+
+    const employee = await Employee.findOne({ email, password });
+
+    if (!employee) return res.status(404).send({ message: 'Not found' });
+
+    const { _id, email: empEmail, firstName, lastName} = employee;
+
+    const token = encodeToken(_id, empEmail, firstName, lastName);
+
+    res.status(200).json({
+      token,
+    });
+  } catch (err) {
+    res.status(401).json({
+      statusCode: 401,
+      message: 'Unauthorized',
+    });
+  }
+});
+
+router.get('/profile',
+  passport.authenticate('jwt', { session: false }),
+  async (req, res, next) => {
+    try {
+      const employee = await Employee.findById(req.user._id);
+
+      if (!employee) return res.status(404).send({ message: 'Not found' });
+
+      res.status(200).json(employee);
+    } catch (err) {
+      res.sendStatus(500);
+    }
+  },
+);
+
+// router.route('/profile').get(passport.authenticate('jwt', { session: false }), async (req, res, next) => {
+//   try {
+//     const employee = await Employee.findById(req.user._id);
+
+//     if (!employee) return res.status(404).send({ message: 'Not found' });
+
+//     res.status(200).json(employee);
+//   } catch (err) {
+//     res.sendStatus(500);
+//   }
+// },);
 
 // GET
 router.get('/', function (req, res, next) {

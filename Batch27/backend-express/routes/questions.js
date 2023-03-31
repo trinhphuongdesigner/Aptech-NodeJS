@@ -761,4 +761,11 @@ router.get('/26b', async (req, res, next) => {
   }
 });
 
+
+router.get('/test', function (req, res) {
+  const { text, text2 } = req;
+
+  res.send('')
+})
+
 module.exports = router;
