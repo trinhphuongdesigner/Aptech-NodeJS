@@ -3,8 +3,9 @@ content-type: application/json
 
 { 
    "firstName": "Nhan vien", 
-   "lastName": "B",
-   "email": "nhanvienb@gmail.com",
-   "phoneNumber": "0386592666",
-   "address": "04 ha huy tap"
+   "lastName": "E",
+   "email": "nhanviene@gmail.com",
+   "password": "123456",
+   "phoneNumber": "0386592777",
+   "address": "455 ha huy tap"
 }

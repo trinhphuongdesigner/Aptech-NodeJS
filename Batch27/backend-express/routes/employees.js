@@ -51,19 +51,20 @@ router.get('/profile',
   },
 );
 
-// router.route('/profile').get(passport.authenticate('jwt', { session: false }), async (req, res, next) => {
-//   try {
-//     const employee = await Employee.findById(req.user._id);
+router.route('/profile').get(passport.authenticate('jwt', { session: false }), async (req, res, next) => {
+  try {
+    const employee = await Employee.findById(req.user._id);
 
-//     if (!employee) return res.status(404).send({ message: 'Not found' });
+    if (!employee) return res.status(404).send({ message: 'Not found' });
 
-//     res.status(200).json(employee);
-//   } catch (err) {
-//     res.sendStatus(500);
-//   }
-// },);
+    res.status(200).json(employee);
+  } catch (err) {
+    res.sendStatus(500);
+  }
+},);
 
 // GET
+
 router.get('/', function (req, res, next) {
   try {
     Employee.find()
@@ -118,6 +119,7 @@ router.post('/', function (req, res, next) {
 router.patch('/:id', function (req, res, next) {
   try {
     const { id } = req.params;
+    console.log('««««« req.body »»»»»', req.body);
     const data = req.body;
 
     Employee.findByIdAndUpdate(id, data, {
