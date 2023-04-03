@@ -51,18 +51,12 @@ employeeSchema.virtual('fullName').get(function () {
 
 employeeSchema.pre('save', async function (next) {
   try {
-    if (!this.isModified('password')) return next();
-
-    console.log('««««« this.password »»»»»', this.password);
     // generate salt key
     const salt = await bcrypt.genSalt(10); // 10 ký tự
-    console.log('««««« salt »»»»»', salt);
     // generate password = salt key + hash key
     const hashPass = await bcrypt.hash(this.password, salt);
-    console.log('««««« hashPass »»»»»', hashPass);
     // override password
     this.password = hashPass;
-
     next();
   } catch (err) {
     next(err);

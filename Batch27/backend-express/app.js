@@ -11,7 +11,7 @@ require('dotenv').config()
 const { default: mongoose } = require('mongoose');
 const { CONNECTION_STRING } = require('./constants/dbSettings');
 
-const { passportConfig, passportConfigLocal} = require('./middlewares/passport');
+const { passportConfig, passportConfigLocal } = require('./middlewares/passport');
 
 // IMPORTS
 const indexRouter = require('./routes/index');
