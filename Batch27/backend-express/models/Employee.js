@@ -49,6 +49,27 @@ employeeSchema.virtual('fullName').get(function () {
   return this.firstName + ' ' + this.lastName;
 });
 
+employeeSchema.pre('save', async function (next) {
+  try {
+    // generate salt key
+    const salt = await bcrypt.genSalt(10); // 10 ký tự
+    // generate password = salt key + hash key
+    const hashPass = await bcrypt.hash(this.password, salt);
+    // override password
+    this.password = hashPass;
+    next();
+  } catch (err) {
+    next(err);
+  }
+})
+
+employeeSchema.methods.isValidPass = async function(pass) {
+  try {
+    return await bcrypt.compare(pass, this.password);
+  } catch (err) {
+    throw new Error(err);
+  }
+}
 
 // employeeSchema.pre('save', function a(next) {
 //   const user = this;

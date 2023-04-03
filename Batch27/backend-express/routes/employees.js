@@ -4,7 +4,11 @@ const express = require('express');
 const { CONNECTION_STRING } = require('../constants/dbSettings');
 const { default: mongoose } = require('mongoose');
 const { Employee } = require('../models');
-const { validateSchema, loginSchema, categorySchema } = require('../validation/employee');
+const {
+  validateSchema,
+  loginSchema,
+  categorySchema,
+} = require('../validation/employee');
 const encodeToken = require('../helpers/jwtHelper');
 
 // MONGOOSE
@@ -13,30 +17,36 @@ mongoose.connect(CONNECTION_STRING);
 
 const router = express.Router();
 
-router.post('/login', validateSchema(loginSchema), async (req, res, next) => {
-  try {
-    const { email, password } = req.body;
+router.post(
+  '/login',
+  validateSchema(loginSchema),
+  passport.authenticate('local', { session: false }),
+  async (req, res, next) => {
+    try {
+      const { email } = req.body;
+      const employee = await Employee.findOne({ email });
 
-    const employee = await Employee.findOne({ email, password });
+      if (!employee) return res.status(404).send({ message: 'Not found' });
 
-    if (!employee) return res.status(404).send({ message: 'Not found' });
+      const { _id, email: empEmail, firstName, lastName } = employee;
 
-    const { _id, email: empEmail, firstName, lastName} = employee;
+      const token = encodeToken(_id, empEmail, firstName, lastName);
 
-    const token = encodeToken(_id, empEmail, firstName, lastName);
+      res.status(200).json({
+        token,
+        payload: employee,
+      });
+    } catch (err) {
+      res.status(401).json({
+        statusCode: 401,
+        message: 'Unauthorized',
+      });
+    }
+  },
+);
 
-    res.status(200).json({
-      token,
-    });
-  } catch (err) {
-    res.status(401).json({
-      statusCode: 401,
-      message: 'Unauthorized',
-    });
-  }
-});
-
-router.get('/profile',
+router.get(
+  '/profile',
   passport.authenticate('jwt', { session: false }),
   async (req, res, next) => {
     try {
