@@ -13,7 +13,7 @@ function insertDocument(data, collectionName) {
     mongoose.model(collectionName)
       .create(data)
       .then((result) => {
-        resolve({ data: data, result: result });
+        resolve(result);
       })
       .catch((err) => {
         reject(err);
@@ -46,22 +46,13 @@ function insertDocument(data, collectionName) {
 
 // ----------------------------------------------------------------------------
 // INSERT: Thêm mới (nhiều)
+
 function insertDocuments(list, collectionName) {
   return new Promise((resolve, reject) => {
-    MongoClient.connect(CONNECTION_STRING, { useNewUrlParser: true, useUnifiedTopology: true })
-      .then((client) => {
-        const dbo = client.db(DATABASE_NAME);
-        const collection = dbo.collection(collectionName);
-        collection
-          .insertMany(list)
-          .then((result) => {
-            client.close();
-            resolve(result);
-          })
-          .catch((err) => {
-            client.close();
-            reject(err);
-          });
+    mongoose.model(collectionName)
+      .insertMany(list)
+      .then((result) => {
+        resolve(result);
       })
       .catch((err) => {
         reject(err);
@@ -71,23 +62,13 @@ function insertDocuments(list, collectionName) {
 
 // ----------------------------------------------------------------------------
 // UPDATE: Sửa
-function updateDocument(id, data, collectionName) {
+
+function updateDocument(condition, data, collectionName) {
   return new Promise((resolve, reject) => {
-    MongoClient.connect(CONNECTION_STRING, { useNewUrlParser: true, useUnifiedTopology: true })
-      .then((client) => {
-        const dbo = client.db(DATABASE_NAME);
-        const collection = dbo.collection(collectionName);
-        const query = { _id: ObjectId(id) };
-        collection
-          .findOneAndUpdate(query, { $set: data })
-          .then((result) => {
-            client.close();
-            resolve(result);
-          })
-          .catch((err) => {
-            client.close();
-            reject(err);
-          });
+    mongoose.model(collectionName)
+      .findOneAndUpdate(condition, { $set: data })
+      .then((result) => {
+        resolve(result);
       })
       .catch((err) => {
         reject(err);
@@ -172,6 +153,7 @@ function deleteDocuments(query, collectionName) {
 }
 // ----------------------------------------------------------------------------
 // FIND: Tìm kiếm (id)
+
 function findDocument(id ,collectionName) {
   return new Promise((resolve, reject) => {
     const collection = mongoose.model(collectionName);

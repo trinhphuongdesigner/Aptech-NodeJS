@@ -9,6 +9,7 @@ const {
   findDocument,
   toSafeFileName,
   insertDocument,
+  insertDocuments,
 } = require('../helpers/MongoDbHelper');
 const { isValidObjectId } = require('mongoose');
 
@@ -33,88 +34,100 @@ const upload = multer({
       callback(null, safeFileName);
     },
   }),
-}).single('file');
+});
 
-router.post('/create', async (req, res, next) =>
-upload(req, res, async (err) => {
-  if (err instanceof multer.MulterError) {
-    res.status(500).json({ type: 'MulterError', err: err });
-  } else if (err) {
-    res.status(500).json({ type: 'UnknownError', err: err });
-  } else {
-    const imageUrl = `/uploads/media/${req.file.filename}`;
-    const name = req.file.filename;
+router.post('/upload-single', (req, res) =>
+  upload.single('file')(req, res, async (err) => {
+    try {
+      if (err instanceof multer.MulterError) {
+        res.status(500).json({ type: 'MulterError', err: err });
+      } else if (err) {
+        res.status(500).json({ type: 'UnknownError', err: err });
+      } else {
+        const imageUrl = `/uploads/media/${req.file.filename}`;
+        const name = req.file.filename;
 
-    const result = await insertDocument({ location: imageUrl, name}, 'Media')
-    res.status(200).json({ ok: true, });
-  }
-})
+        const response = await insertDocument(
+          { location: imageUrl, name },
+          'Media',
+        );
+        res.status(200).json({ ok: true, payload: response });
+      }
+    } catch (error) {
+      res.status(500).json({ ok: false, error });
+    }
+  }),
 );
 
-// http://127.0.0.1:9000/upload/media/63293fea50d2f78624e0c6f3/image
-router.post('/:collectionName/:id/image', async (req, res, next) => {
-  const { collectionName, id } = req.params;
+router.post('/upload-multiple', (req, res) =>
+  upload.array('files', 3)(req, res, async (err) => {
+    try {
+      if (err instanceof multer.MulterError) {
+        res.status(500).json({ type: 'MulterError', err: err });
+      } else if (err) {
+        res.status(500).json({ type: 'UnknownError', err: err });
+      } else {
+        const files = req.files;
 
-  const found = await findDocument(id, collectionName);
+        const dataInsert = files.reduce((prev, nextP) => {
+          prev.push({ name: nextP.filename, location: nextP.path });
+          return prev;
+        }, []);
+
+        const response = await insertDocuments(dataInsert, 'Media');
+
+        res.status(200).json({ ok: true, payload: response });
+      }
+    } catch (error) {
+      res.status(500).json({ ok: false, error });
+    }
+  }),
+);
+
+router.get('/media/:id', async (req, res, next) => {
+  const { id } = req.params;
+
+  const found = await findDocument(id, 'Media');
   if (!found) {
     return res
       .status(410)
       .json({ message: `${collectionName} with id ${id} not found` });
   }
 
-  upload(req, res, async (err) => {
-    if (err instanceof multer.MulterError) {
-      res.status(500).json({ type: 'MulterError', err: err });
-    } else if (err) {
-      res.status(500).json({ type: 'UnknownError', err: err });
-    } else {
-      // UPDATE MONGODB
-      updateDocument(
-        id,
-        { imageUrl: `/uploads/${collectionName}/${id}/${req.file.filename}` },
-        collectionName,
-      );
-      //
-      // console.log('host', req.get('host'));
-      const publicUrl = `${req.protocol}://${req.get(
-        'host',
-      )}/uploads/${collectionName}/${id}/${req.file.filename}`;
-      res.status(200).json({ ok: true, publicUrl: publicUrl });
+  res.status(200).json({ ok: true, payload: found });
+});
+
+router.post('/media/update/:id', async (req, res) => {
+  const { id } = req.params;
+
+  const found = await findDocument(id, 'Media');
+  if (!found) res.status(410).json({ message: `${collectionName} with id ${id} not found` });
+
+  upload.single('file')(req, res, async (err) => {
+    try {
+      if (err instanceof multer.MulterError) {
+        res.status(500).json({ type: 'MulterError', err: err });
+      } else if (err) {
+        res.status(500).json({ type: 'UnknownError', err: err });
+      } else {
+        const imageUrl = `/uploads/media/${req.file.filename}`;
+        const name = req.file.filename;
+
+        const response = await updateDocument(
+          { _id: id },
+          {
+            location: imageUrl,
+            name,
+          },
+          'Media',
+        );
+
+        res.status(200).json({ ok: true, payload: response });
+      }
+    } catch (error) {
+      res.status(500).json({ ok: false, error });
     }
   });
 });
-
-// http://127.0.0.1:9000/upload/media/63293fea50d2f78624e0c6f3/images
-// router.post('/:collectionName/:id/images', async (req, res, next) => {
-//   const { collectionName, id } = req.params;
-
-//   const found = await findDocument(id, collectionName);
-//   if (!found) {
-//     return res.status(410).json({ message: `${collectionName} with id ${id} not found` });
-//   }
-
-//   upload(req, res, async (err) => {
-//     if (err instanceof multer.MulterError) {
-//       res.status(500).json({ type: 'MulterError', err: err });
-//     } else if (err) {
-//       res.status(500).json({ type: 'UnknownError', err: err });
-//     } else {
-//       // UPDATE MONGODB
-//       const newImageUrl = `/uploads/${collectionName}/${id}/${req.file.filename}`;
-
-//       let images = found.images;
-//       if (!images) {
-//         images = [];
-//       }
-//       images.push(newImageUrl);
-
-//       await updateDocument(id, { images: images }, collectionName);
-
-//       // console.log('host', req.get('host'));
-//       const publicUrl = `${req.protocol}://${req.get('host')}/uploads/${collectionName}/${id}/${req.file.filename}`;
-//       res.status(200).json({ ok: true, publicUrl: publicUrl });
-//     }
-//   });
-// });
 
 module.exports = router;
