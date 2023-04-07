@@ -1096,6 +1096,80 @@ router.get('/27', async (req, res, next) => {
   }
 });
 
+// Hiển thị danh sách các mức giảm giá của các sản phẩm | đơn hàng
+
+router.get('/29', async (req, res, next) => {
+  try {
+    const response = await Order.distinct("orderDetails.discount")
+
+    if (!response) return res.status(400).send({ message: 'Not found' });
+
+    res.send(response);
+  } catch (err) {
+    res.sendStatus(500);
+  }
+});
+
+// Hiển thị tất cả danh mục (Categories) với tổng số tiền bán được trong mỗi danh mục
+
+router.get('/30', async (req, res, next) => {
+  try {
+    const response = await Category.aggregate()
+    .lookup({
+      from: 'products',
+      localField: '_id',
+      foreignField: 'categoryId',
+      as: 'products'
+    })
+    .unwind({
+      path: '$products',
+      preserveNullAndEmptyArrays: true,
+    })
+    .lookup({
+      from: 'orders',
+      localField: 'products._id',
+      foreignField: 'orderDetails.productId',
+      as: 'orders'
+    })
+    .unwind({
+      path: '$orders',
+      preserveNullAndEmptyArrays: true,
+    })
+    .unwind({
+      path: '$orders.orderDetails',
+      preserveNullAndEmptyArrays: true,
+    })
+    .addFields({
+      originalPrice: {
+        $divide: [
+          {
+            $multiply: [
+              '$orders.orderDetails.price',
+              { $subtract: [100, '$orders.orderDetails.discount'] },
+            ],
+          },
+          100,
+        ],
+      },
+      amount: '$orders.orderDetails.quantity',
+    })
+    .group({
+      _id: '$_id',
+      name: { $first: '$name' },
+      description: { $first: '$description' },
+      total: {
+        $sum: { $multiply: ['$originalPrice', '$amount'] },
+      },
+    })
+
+    if (!response) return res.status(400).send({ message: 'Not found' });
+
+    res.send(response);
+  } catch (err) {
+    res.sendStatus(500);
+  }
+})
+
 // Hiển thị tất cả đơn hàng có tổng số tiền bán hàng ít nhất trong khoảng từ ngày, đến ngày
 
 router.get('/33', function (req, res, next) {
