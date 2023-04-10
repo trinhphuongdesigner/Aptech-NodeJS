@@ -26,9 +26,11 @@ const io = socketIO(server);
 io.on('connection', (socket) => {
   console.log('A client connected.');
 
-  socket.on('on-chat', (data) => {
+  // on: nhận thông điệp
+  // data: thông tin mà người dùng emit lên (gửi lên)
+  socket.on('my-chat', (data) => {
     console.log(`Received message: ${data.message}`);
-    io.emit('user-chat', data);
+    io.emit('group-chat', data);
   });
 
   // socket.on('disconnect', () => {

@@ -6,14 +6,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Chat</title>
 </head>
+
 <body>
-  <h1>Hello</h1>
+  <h1>App Chat</h1>
 
-  <ul id="messages"></ul>
+  <ul class="messages"></ul>
 
-  <form id="chat-form">
-    <input type="text" name="" id="chat-mess">
-    <button id="send-chat">Send</button>
+  <form class="chat-form">
+    <input type="text" name="" class="chat-mess">
+
+    <button class="send-chat">Send</button>
   </form>
 </body>
 
@@ -22,15 +24,17 @@
   const socket = io();
 
   const name = prompt('tên bạn');
-  const chatForm = document.querySelector('#chat-form');
-  const chatMess = document.querySelector('#chat-mess');
+  const chatForm = document.querySelector('.chat-form');
+  const chatMess = document.querySelector('.chat-mess');
 
   chatForm.addEventListener('submit', (e) => {
     e.preventDefault();
 
     const message = chatMess.value;
 
-    socket.emit('on-chat', {
+    // my-chat: event name
+    // emit: gửi đi thông điệp
+    socket.emit('my-chat', {
       name,
       message,
     })
@@ -38,11 +42,13 @@
   });
 
   const messages = document.querySelector('#messages');
-    socket.on('user-chat', mess => {
-      const chatItem = document.createElement('li');
-      chatItem.textContent = `${mess.name}: ${mess.message}`;
 
-      messages.appendChild(chatItem);
-    })
+  socket.on('group-chat', mess => {
+    console.log('««««« mess »»»»»', mess);
+    const chatItem = document.createElement('li');
+    chatItem.textContent = `${mess.name}: ${mess.message}`;
+
+    messages.appendChild(chatItem);
+  })
 </script>
 </html>
