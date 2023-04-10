@@ -13,7 +13,7 @@ function insertDocument(data, collectionName) {
     mongoose.model(collectionName)
       .create(data)
       .then((result) => {
-        resolve({ data: data, result: result });
+        resolve({ result: result });
       })
       .catch((err) => {
         reject(err);

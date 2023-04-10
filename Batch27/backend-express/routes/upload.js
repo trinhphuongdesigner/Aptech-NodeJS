@@ -46,7 +46,7 @@ upload(req, res, async (err) => {
     const name = req.file.filename;
 
     const result = await insertDocument({ location: imageUrl, name}, 'Media')
-    res.status(200).json({ ok: true, });
+    res.status(200).json({ ok: true, payload: result });
   }
 })
 );
