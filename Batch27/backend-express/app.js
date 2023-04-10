@@ -24,6 +24,8 @@ const suppliersRouter = require('./routes/suppliers');
 const ordersRouter = require('./routes/orders');
 const questionsRouter = require('./routes/questions');
 
+const uploadRouter = require('./routes/upload');
+
 const app = express();
 
 // view engine setup
@@ -45,7 +47,18 @@ app.use(
 
 // MONGOOSE
 mongoose.set('strictQuery', false);
-mongoose.connect(CONNECTION_STRING);
+mongoose.connect(CONNECTION_STRING,
+  { useNewUrlParser: true, useUnifiedTopology: true },
+);
+mongoose.connection.on('error', (err) => {
+  if (err) {
+    console.error(err);
+
+    mongoose.connect(CONNECTION_STRING,
+      { useNewUrlParser: true, useUnifiedTopology: true },
+    );
+  }
+});
 
 passport.use(passportConfig);
 passport.use(passportConfigLocal);
@@ -60,6 +73,8 @@ app.use('/categories', categoriesRouter);
 app.use('/suppliers', suppliersRouter);
 app.use('/orders', ordersRouter);
 app.use('/questions', questionsRouter);
+
+app.use('/upload', uploadRouter);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {

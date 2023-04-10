@@ -61,7 +61,7 @@ employeeSchema.pre('save', async function (next) {
   } catch (err) {
     next(err);
   }
-})
+});
 
 employeeSchema.methods.isValidPass = async function(pass) {
   try {
@@ -69,7 +69,7 @@ employeeSchema.methods.isValidPass = async function(pass) {
   } catch (err) {
     throw new Error(err);
   }
-}
+};
 
 // employeeSchema.pre('save', function a(next) {
 //   const user = this;
@@ -87,11 +87,6 @@ employeeSchema.methods.isValidPass = async function(pass) {
 //     });
 //   });
 // });
-
-// // Check password from client
-// employeeSchema.methods.comparePassword = function comparePassword(checkPassword) {
-//   return bcrypt.compareSync(checkPassword, this.password);
-// };
 
 const Employee = model('Employee', employeeSchema);
 module.exports = Employee;

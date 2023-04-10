@@ -61,17 +61,22 @@ router.get(
   },
 );
 
-router.route('/profile').get(passport.authenticate('jwt', { session: false }), async (req, res, next) => {
-  try {
-    const employee = await Employee.findById(req.user._id);
+router
+  .route('/profile')
+  .get(
+    passport.authenticate('jwt', { session: false }),
+    async (req, res, next) => {
+      try {
+        const employee = await Employee.findById(req.user._id);
 
-    if (!employee) return res.status(404).send({ message: 'Not found' });
+        if (!employee) return res.status(404).send({ message: 'Not found' });
 
-    res.status(200).json(employee);
-  } catch (err) {
-    res.sendStatus(500);
-  }
-},);
+        res.status(200).json(employee);
+      } catch (err) {
+        res.sendStatus(500);
+      }
+    },
+  );
 
 // GET
 
@@ -106,7 +111,7 @@ router.get('/:id', function (req, res, next) {
 });
 
 // POST
-router.post('/', function (req, res, next) {
+router.post('/register', function (req, res, next) {
   try {
     const data = req.body;
 
