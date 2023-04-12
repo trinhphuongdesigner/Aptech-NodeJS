@@ -21,5 +21,5 @@ TRONG ĐÓ:
 
   VD: NHẬP 100.000 VÀO Ô GIÁ NHỎ NHẤT ĐỂ TÌM KIẾM => TRẢ VỀ CÁC SẢN PHẨM CÓ GIÁ TỪ 100.000 
   VD: NHẬP 100.000 VÀO Ô GIÁ LỚN NHẤT ĐỂ TÌM KIẾM => TRẢ VỀ CÁC SẢN PHẨM CÓ GIÁ TỪ 0 ĐẾN 100.000 
-  VD: NHẬP 100.000 VÀO Ô GIÁ LỚN NHẤT ĐỂ TÌM KIẾM => TRẢ VỀ CÁC SẢN PHẨM CÓ GIÁ TỪ 0 ĐẾN 100.000 
   VD: NHẬP 100.000 VÀO Ô GIÁ NHỎ NHẤT , 500.000 VÀO Ô GIÁ LỚN NHẤT ĐỂ TÌM KIẾM => TRẢ VỀ CÁC SẢN PHẨM CÓ GIÁ TỪ 100.000 ĐẾN 500.000 
+  VD: KHÔNG NHẬP => TÌM THEO TẤT CẢ GIÁ.
