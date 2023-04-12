@@ -84,18 +84,18 @@ router.post('/upload-multiple', (req, res) =>
   }),
 );
 
-router.get('/media/:id', async (req, res, next) => {
-  const { id } = req.params;
+// router.get('/media/:id', async (req, res, next) => {
+//   const { id } = req.params;
 
-  const found = await findDocument(id, 'Media');
-  if (!found) {
-    return res
-      .status(410)
-      .json({ message: `${collectionName} with id ${id} not found` });
-  }
+//   const found = await findDocument(id, 'Media');
+//   if (!found) {
+//     return res
+//       .status(410)
+//       .json({ message: `${collectionName} with id ${id} not found` });
+//   }
 
-  res.status(200).json({ ok: true, payload: found });
-});
+//   res.status(200).json({ ok: true, payload: found });
+// });
 
 router.post('/media/update/:id', async (req, res) => {
   const { id } = req.params;
