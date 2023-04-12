@@ -7,6 +7,7 @@
 var app = require('../app');
 var debug = require('debug')('backend-express:server');
 var http = require('http');
+const socketIO = require('socket.io');
 
 /**
  * Get port from environment and store in Express.
@@ -20,6 +21,20 @@ app.set('port', port);
  */
 
 var server = http.createServer(app);
+const io = socketIO(server);
+
+io.on('connection', (socket) => {
+  console.log('A client connected.');
+
+  socket.on('on-chat', (data) => {
+    console.log(`Received message: ${data.message}`);
+    io.emit('user-chat', data);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('A client disconnected.');
+  });
+});
 
 /**
  * Listen on provided port, on all network interfaces.

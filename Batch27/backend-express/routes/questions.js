@@ -1,6 +1,9 @@
 const yup = require('yup');
 const express = require('express');
 const router = express.Router();
+const { default: mongoose } = require('mongoose');
+const ObjectId = require('mongodb').ObjectId;
+
 const {
   Category,
   Product,
@@ -9,8 +12,8 @@ const {
   Order,
   Supplier,
 } = require('../models');
-const { default: mongoose } = require('mongoose');
-const ObjectId = require('mongodb').ObjectId;
+const { getQueryDateTime } = require('../helpers/utils')
+
 
 // QUESTIONS 1a http://localhost:9000/questions/1a?discount=10
 // Hiển thị tất cả các mặt hàng có giảm giá <= 10%
@@ -359,6 +362,212 @@ router.get('/15', function (req, res, next) {
   }
 });
 
+// Hiển thị tất cả các mặt hàng cùng với thông tin chi tiết của Category và Supplier
+
+router.get('/17', async (req, res, next) => {
+  try {
+    const response = await Product.find()
+      .populate('category')
+      .populate('supplier');
+
+    if (!response) {
+      return res.status(400).send({ message: 'Not found' });
+    }
+
+    res.send(response);
+  } catch (err) {
+    res.sendStatus(500);
+  }
+});
+
+// Hiển thị tất cả danh mục (Categories) với số lượng hàng hóa trong mỗi danh mục
+
+// router.get('/18', async (req, res, next) => {
+//   try {
+//     let response = await Category.aggregate()
+//     .lookup({
+//       from: 'products',
+//       localField: '_id',
+//       foreignField: 'categoryId',
+//       as: 'products'
+//     });
+
+//     response = response.map((item) => {
+//       let sumStock = 0;
+
+//       if (item.products.length > 0) {
+//         sumStock = item.products.reduce(
+//           (accumulator, object) => accumulator + object.stock,
+//           0
+//         );
+//       }
+
+//       return {
+//         ...item,
+//         sumStock,
+//       };
+//     })
+
+//     if (!response) {
+//       return res.status(400).send({ message: "Not found" });
+//     }
+
+//     res.send(aaa);
+//   } catch (err) {
+//     res.status(500).send(err);
+//   }
+// });
+
+router.get('/18', async (req, res, next) => {
+  try {
+    let response = await Category.aggregate()
+      .lookup({
+        from: 'products',
+        localField: '_id',
+        foreignField: 'categoryId',
+        as: 'products',
+      })
+      .unwind('products')
+      .group({
+        _id: '$_id',
+        name: { $first: '$name' },
+        description: { $first: '$description' },
+        totalProduct: {
+          $sum: '$products.stock',
+        },
+      })
+      .sort({
+        totalProduct: -1,
+        name: 1,
+      });
+
+    if (!response) {
+      return res.status(400).send({ message: 'Not found' });
+    }
+
+    res.send(response);
+  } catch (err) {
+    res.status(500).send(err);
+  }
+});
+
+// Hiển thị tất cả nhà cung cấp (Suppliers) với số lượng hàng hóa mỗi nhà cung cấp
+
+router.get('/19', async (req, res, next) => {
+  try {
+    let response = await Supplier.aggregate()
+      .lookup({
+        from: 'products',
+        localField: '_id',
+        foreignField: 'supplierId',
+        as: 'products',
+      })
+      .unwind('products')
+      .group({
+        _id: '$_id',
+        name: { $first: '$name' },
+        email: { $first: '$email' },
+        phoneNumber: { $first: '$phoneNumber' },
+        address: { $first: '$address' },
+        totalProduct: {
+          $sum: '$products.stock',
+        },
+      })
+      .sort({
+        totalProduct: -1,
+        name: -1,
+      });
+
+    if (!response) {
+      return res.status(400).send({ message: 'Not found' });
+    }
+
+    res.send(response);
+  } catch (err) {
+    res.status(500).send(err);
+  }
+});
+
+//Hiển thị tất cả các mặt hàng được bán trong khoảng từ ngày, đến ngày
+
+router.get('/20', async (req, res, next) => {
+  try {
+    let { fromDate, toDate } = req.query;
+    const query = getQueryDateTime(fromDate, toDate);
+
+    let response = await Order.aggregate()
+      .match(query)
+      .unwind('orderDetails')
+      .lookup({
+        from: 'products',
+        localField: 'orderDetails.productId',
+        foreignField: '_id',
+        as: 'orderDetails.products',
+      })
+      .unwind('orderDetails.products')
+      .group({
+        _id: '$orderDetails.productId',
+        name: { $first: '$orderDetails.products.name' },
+        price: { $first: '$orderDetails.products.price' },
+        discount: { $first: '$orderDetails.products.discount' },
+        stock: { $first: '$orderDetails.products.stock' },
+      });
+
+    if (!response) {
+      return res.status(400).send({ message: 'Not found' });
+    }
+
+    res.send(response);
+  } catch (err) {
+    res.status(500).send(err);
+  }
+});
+
+//Hiển thị tất cả các khách hàng mua hàng trong khoảng từ ngày, đến ngày
+
+router.get('/21', async (req, res, next) => {
+  try {
+    let { fromDate, toDate } = req.query;
+
+    fromDate = new Date(fromDate);
+
+    const tmpToDate = new Date(toDate);
+    toDate = new Date(tmpToDate.setDate(tmpToDate.getDate() + 1));
+
+    const compareFromDate = { $gte: ['$createdDate', fromDate] };
+    const compareToDate = { $lt: ['$createdDate', toDate] };
+
+    let response = await Order.aggregate()
+      .match({
+        $expr: { $and: [compareFromDate, compareToDate] },
+      })
+      .lookup({
+        from: 'customers',
+        localField: 'customerId',
+        foreignField: '_id',
+        as: 'customers',
+      })
+      .unwind('customers')
+      .group({
+        _id: '$customers._id',
+        firstName: { $first: '$customers.firstName' },
+        lastName: { $first: '$customers.lastName' },
+        email: { $first: '$customers.email' },
+        phoneNumber: { $first: '$customers.phoneNumber' },
+        address: { $first: '$customers.address' },
+        birthday: { $first: '$customers.birthday' },
+      });
+
+    if (!response) {
+      return res.status(400).send({ message: 'Not found' });
+    }
+
+    res.send(response);
+  } catch (err) {
+    res.status(500).send(err);
+  }
+});
+
 // QUESTIONS 22 http://localhost:9000/questions/22?fromDate=2023-03-27&toDate=2023-03-29
 // Hiển thị tất cả các khách hàng mua hàng (với tổng số tiền) trong khoảng từ ngày, đến ngày
 
@@ -425,6 +634,60 @@ router.get('/22', function (req, res, next) {
       .catch((err) => {
         res.status(400).send({ message: err.message });
       });
+  } catch (err) {
+    res.sendStatus(500);
+  }
+});
+
+// Hiển thị tất cả các nhân viên bán hàng với tổng số tiền bán được
+
+router.get('/24', async (req, res, next) => {
+  try {
+    const response = await Order.aggregate()
+      .lookup({
+        from: 'employees',
+        localField: 'employeeId',
+        foreignField: '_id',
+        as: 'employees',
+      })
+      .unwind('employees')
+      .unwind('orderDetails')
+      .lookup({
+        from: 'products',
+        localField: 'orderDetails.productId',
+        foreignField: '_id',
+        as: 'orderDetails.products',
+      })
+      .unwind('orderDetails.products')
+      .addFields({
+        originalPrice: {
+          $divide: [
+            {
+              $multiply: [
+                '$orderDetails.products.price',
+                { $subtract: [100, '$orderDetails.products.discount'] },
+              ],
+            },
+            100,
+          ],
+        },
+      })
+      .group({
+        _id: '$employees._id',
+        firstName: { $first: '$employees.firstName' },
+        lastName: { $first: '$employees.lastName' },
+        email: { $first: '$employees.email' },
+        phoneNumber: { $first: '$employees.phoneNumber' },
+        address: { $first: '$employees.address' },
+        birthday: { $first: '$employees.birthday' },
+        totalSales: {
+          $sum: { $multiply: ['$originalPrice', '$orderDetails.quantity'] },
+        },
+      });
+
+    if (!response) return res.status(400).send({ message: 'Not found' });
+
+    res.send(response);
   } catch (err) {
     res.sendStatus(500);
   }
@@ -761,11 +1024,358 @@ router.get('/26b', async (req, res, next) => {
   }
 });
 
+// Hiển thị top 3 các nhân viên bán hàng với tổng số tiền bán được từ cao đến thấp trong khoảng từ ngày, đến ngày
+
+router.get('/27', async (req, res, next) => {
+  try {
+    let { fromDate, toDate } = req.query;
+    const query = getQueryDateTime(fromDate, toDate);
+
+    const response = await Order.aggregate()
+      .match(query)
+      .lookup({
+        from: 'employees',
+        localField: 'employeeId',
+        foreignField: '_id',
+        as: 'employees',
+      })
+      .unwind('employees')
+      .unwind('orderDetails')
+      // .lookup({
+      //   from: 'products',
+      //   localField: 'orderDetails.productId',
+      //   foreignField: '_id',
+      //   as: 'orderDetails.products',
+      // })
+      // .unwind('orderDetails.products')
+      .addFields({
+        originalPrice: {
+          $divide: [
+            {
+              $multiply: [
+                '$orderDetails.price',
+                { $subtract: [100, '$orderDetails.discount'] },
+              ],
+            },
+            100,
+          ],
+        },
+      })
+      .group({
+        _id: '$employees._id',
+        firstName: { $first: '$employees.firstName' },
+        lastName: { $first: '$employees.lastName' },
+        email: { $first: '$employees.email' },
+        phoneNumber: { $first: '$employees.phoneNumber' },
+        address: { $first: '$employees.address' },
+        birthday: { $first: '$employees.birthday' },
+        totalSales: {
+          $sum: { $multiply: ['$originalPrice', '$orderDetails.quantity'] },
+        },
+      })
+
+      // Luôn trả về tất cả các nhân viên thỏa mãn với giá trị theo thứ tự sắp xếp
+      .group({
+        _id: '$totalSales',
+        employees: { $push: '$$ROOT' },
+      })
+      .sort({ _id: -1 })
+      .limit(3)
+      .skip(0)
+
+      // Luôn luôn trả về 3 kết quả
+      // .sort({ totalSales: -1 })
+      // .limit(3)
+      // .skip(0)
+
+    if (!response) return res.status(400).send({ message: 'Not found' });
+
+    res.send(response);
+  } catch (err) {
+    res.sendStatus(500);
+  }
+});
+
+// Hiển thị danh sách các mức giảm giá của các sản phẩm | đơn hàng
+
+router.get('/29', async (req, res, next) => {
+  try {
+    const response = await Order.distinct("orderDetails.discount")
+
+    if (!response) return res.status(400).send({ message: 'Not found' });
+
+    res.send(response);
+  } catch (err) {
+    res.sendStatus(500);
+  }
+});
+
+// Hiển thị tất cả danh mục (Categories) với tổng số tiền bán được trong mỗi danh mục
+
+router.get('/30', async (req, res, next) => {
+  try {
+    const response = await Category.aggregate()
+    .lookup({
+      from: 'products',
+      localField: '_id',
+      foreignField: 'categoryId',
+      as: 'products'
+    })
+    .unwind({
+      path: '$products',
+      preserveNullAndEmptyArrays: true,
+    })
+    .lookup({
+      from: 'orders',
+      localField: 'products._id',
+      foreignField: 'orderDetails.productId',
+      as: 'orders'
+    })
+    .unwind({
+      path: '$orders',
+      preserveNullAndEmptyArrays: true,
+    })
+    .unwind({
+      path: '$orders.orderDetails',
+      preserveNullAndEmptyArrays: true,
+    })
+    .addFields({
+      originalPrice: {
+        $divide: [
+          {
+            $multiply: [
+              '$orders.orderDetails.price',
+              { $subtract: [100, '$orders.orderDetails.discount'] },
+            ],
+          },
+          100,
+        ],
+      },
+      amount: '$orders.orderDetails.quantity',
+    })
+    .group({
+      _id: '$_id',
+      name: { $first: '$name' },
+      description: { $first: '$description' },
+      total: {
+        $sum: { $multiply: ['$originalPrice', '$amount'] },
+      },
+    })
+
+    if (!response) return res.status(400).send({ message: 'Not found' });
+
+    res.send(response);
+  } catch (err) {
+    res.sendStatus(500);
+  }
+})
+
+// Hiển thị tất cả đơn hàng có tổng số tiền bán hàng ít nhất trong khoảng từ ngày, đến ngày
+
+router.get('/33', function (req, res, next) {
+  try {
+    let { fromDate, toDate } = req.query;
+    const query = getQueryDateTime(fromDate, toDate);
+
+    Order.aggregate([
+      { $match: query },
+      { $unwind: '$orderDetails' },
+      {
+        $addFields: {
+          originalPrice: {
+            $divide: [
+              {
+                $multiply: [
+                  '$orderDetails.price',
+                  { $subtract: [100, '$orderDetails.discount'] },
+                ],
+              },
+              100,
+            ],
+          },
+        },
+      },
+      {
+        $group: {
+          _id: '$_id',
+          createdDate: { $first: '$createdDate' },
+          shippedDate: { $first: '$shippedDate' },
+          status: { $first: '$status' },
+          shippingAddress: { $first: '$shippingAddress' },
+          description: { $first: '$description' },
+          total: {
+            $sum: { $multiply: ['$originalPrice', '$orderDetails.quantity'] },
+          },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          avg: { $avg: '$total' },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          avg: 1,
+        },
+      },
+
+      // { $sort: { total: 1}},
+      // { $limit: 1 },
+      // { $skip: 0 }
+
+      // { $group: {
+      //   _id: '$total',
+      //   orders: { $push: '$$ROOT' },
+      // }},
+      // { $project: {
+      //   totalPrice: '$_id',
+      //   _id: 0,
+      //   orders: 1,
+      // }}
+    ])
+      .then((result) => {
+        res.send(result);
+      })
+      .catch((err) => {
+        res.status(400).send({ message: err.message });
+      });
+  } catch (err) {
+    res.sendStatus(500);
+  }
+});
+
+// router.get('/33', function (req, res, next) {
+//   try {
+//     let { fromDate, toDate } = req.query;
+
+//     fromDate = new Date(fromDate);
+
+//     const tmpToDate = new Date(toDate);
+//     toDate = new Date(tmpToDate.setDate(tmpToDate.getDate() + 1));
+
+//     const compareFromDate = { $gte: ['$createdDate', fromDate] };
+//     const compareToDate = { $lt: ['$createdDate', toDate] };
+
+//     const query = {
+//       $expr: { $and: [compareFromDate, compareToDate] },
+//     };
+
+//     Order.aggregate()
+//       .match(query)
+//       .unwind('orderDetails')
+//       .addFields({
+//         originalPrice: {
+//           $divide: [
+//             {
+//               $multiply: [
+//                 '$orderDetails.price',
+//                 { $subtract: [100, '$orderDetails.discount'] },
+//               ],
+//             },
+//             100,
+//           ],
+//         },
+//       })
+//       .group({
+//         _id: '$_id',
+//         createdDate: { $first: '$createdDate' },
+//         shippedDate: { $first: '$shippedDate' },
+//         status: { $first: '$status' },
+//         shippingAddress: { $first: '$shippingAddress' },
+//         description: { $first: '$description' },
+//         total: {
+//           $sum: { $multiply: ['$originalPrice', '$orderDetails.quantity'] },
+//         },
+//       })
+//       .group({
+//         _id: '$total',
+//         orders: { $push: '$$ROOT' },
+//       })
+//       .sort({ _id: 1 })
+//       .limit(1)
+//       .then((result) => {
+//         res.send(result);
+//       })
+//       .catch((err) => {
+//         res.status(400).send({ message: err.message });
+//       });
+//   } catch (err) {
+//     res.sendStatus(500);
+//   }
+// });
+
+// Hiển thị trung bình cộng giá trị các đơn hàng trong khoảng từ ngày, đến ngày
+
+router.get('/34', function (req, res, next) {
+  try {
+    let { fromDate, toDate } = req.query;
+    console.log('««««« fromDate »»»»»', fromDate);
+    console.log('««««« toDate »»»»»', toDate);
+
+    const query = getQueryDateTime(fromDate, toDate);
+
+    Order.aggregate([
+      { $match: query },
+      { $unwind: '$orderDetails' },
+      {
+        $addFields: {
+          originalPrice: {
+            $divide: [
+              {
+                $multiply: [
+                  '$orderDetails.price',
+                  { $subtract: [100, '$orderDetails.discount'] },
+                ],
+              },
+              100,
+            ],
+          },
+        },
+      },
+      {
+        $group: {
+          _id: '$_id',
+          createdDate: { $first: '$createdDate' },
+          shippedDate: { $first: '$shippedDate' },
+          status: { $first: '$status' },
+          shippingAddress: { $first: '$shippingAddress' },
+          description: { $first: '$description' },
+          total: {
+            $sum: { $multiply: ['$originalPrice', '$orderDetails.quantity'] },
+          },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          avg: { $avg: '$total' },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          avg: 1,
+        },
+      },
+    ])
+      .then((result) => {
+        res.send(result);
+      })
+      .catch((err) => {
+        res.status(400).send({ message: err.message });
+      });
+  } catch (err) {
+    console.log('««««« err »»»»»', err);
+    res.sendStatus(500);
+  }
+});
 
 router.get('/test', function (req, res) {
   const { text, text2 } = req;
 
-  res.send('')
-})
+  res.send('');
+});
 
 module.exports = router;
