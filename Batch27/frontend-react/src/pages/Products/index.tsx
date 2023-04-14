@@ -1,6 +1,6 @@
 import { Button, Form, Input, InputNumber, message, Modal, Select, Space, Table } from 'antd';
 import axios from '../../libraries/axiosClient';
-import React from 'react';
+import React, { useCallback } from 'react';
 
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 
@@ -18,8 +18,35 @@ export default function Categories() {
   const [open, setOpen] = React.useState<boolean>(false);
   const [updateId, setUpdateId] = React.useState<number>(0);
 
+  const [category, setCategory] = React.useState<any[]>();
+
   const [createForm] = Form.useForm();
   const [updateForm] = Form.useForm();
+  const onSelectCategoryFilter = useCallback((e: any) => {
+    setCategory(e.target.value);
+  }, []);
+
+  const callApi = useCallback((searchParams: any) => {
+    axios
+    .get(`${apiName}${`?${searchParams.toString()}`}`)
+    .then((response) => {
+      const { data } = response;
+      setItems(data);
+    })
+    .catch((err) => {
+      console.error(err);
+    });
+  }, []);
+
+  const onSearch = useCallback(() => {
+    let filters: { category: any} = {
+      category,
+    };
+    
+    const searchParams: URLSearchParams = new URLSearchParams(filters);
+
+    callApi(searchParams);
+  } , [callApi, category]);
 
   const columns: ColumnsType<any> = [
     {
@@ -296,6 +323,19 @@ export default function Categories() {
         </Form>
       </div>
       {/* TABLE */}
+
+      <div style={{ background: 'red'}}>
+        <select id="cars" onChange={onSelectCategoryFilter}>
+        {
+          categories.map((item: { _id: string, name: string }) => {
+            return <option key={item._id} value={item._id}>{item.name}</option>;
+          })
+        }
+
+        </select>
+
+        <button onClick={onSearch}> timf kieems</button>
+      </div>
       <Table rowKey='id' dataSource={items} columns={columns} pagination={false} />
 
       {/* EDIT FORM */}

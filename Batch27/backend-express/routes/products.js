@@ -10,10 +10,19 @@ const ObjectId = require('mongodb').ObjectId;
 // Get all
 router.get('/', async (req, res, next) => {
   try {
-    let results = await Product.find().populate('category').populate('supplier').lean({ virtuals: true });
+    const { category, q } = req.query;
+    const conditionFind = {};
+    if (category) {
+      conditionFind.category = category;
+    }
+
+    console.log('««««« conditionFind »»»»»', conditionFind);
+
+    let results = await Product.find(conditionFind).populate('category').populate('supplier').lean({ virtuals: true });
 
     res.json(results);
   } catch (error) {
+    console.log('««««« error »»»»»', error);
     res.status(500).json({ ok: false, error });
   }
 });
