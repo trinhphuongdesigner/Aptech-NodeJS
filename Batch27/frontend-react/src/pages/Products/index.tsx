@@ -19,6 +19,7 @@ export default function Categories() {
   const [updateId, setUpdateId] = React.useState<number>(0);
 
   const [category, setCategory] = React.useState<any[]>();
+  const [sup, setSup] = React.useState<any[]>();
 
   const [createForm] = Form.useForm();
   const [updateForm] = Form.useForm();
@@ -334,7 +335,7 @@ export default function Categories() {
 
         </select>
 
-        <button onClick={onSearch}> timf kieems</button>
+        <button onClick={onSearch}>Search</button>
       </div>
       <Table rowKey='id' dataSource={items} columns={columns} pagination={false} />
 
