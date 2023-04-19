@@ -2,10 +2,10 @@ POST http://localhost:9000/employees HTTP/1.1
 content-type: application/json
 
 { 
-   "firstName": "Nhan vien", 
-   "lastName": "E",
-   "email": "nhanviene@gmail.com",
+   "firstName": "Employee", 
+   "lastName": "a",
+   "email": "employee_a@gmail.com",
    "password": "123456",
-   "phoneNumber": "0386592777",
+   "phoneNumber": "0386592521",
    "address": "455 ha huy tap"
 }
