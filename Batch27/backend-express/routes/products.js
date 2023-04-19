@@ -81,6 +81,82 @@ router.get('/', validateSchema(getProductsSchema), async (req, res, next) => {
   }
 });
 
+router.get('/list', validateSchema(getProductsSchema), async (req, res, next) => {
+  try {
+    const {
+      category,
+      sup,
+      q,
+      skip,
+      productName,
+      stockStart,
+      stockEnd,
+      priceStart,
+      priceEnd,
+      discountStart,
+      discountEnd,
+    } = req.query;
+
+    const conditionFind = {};
+
+    // conditionFind.limit = 2;
+
+    if (category) conditionFind.categoryId = category;
+    if (sup) conditionFind.supplierId = sup;
+    if (productName) {
+      conditionFind.name = new RegExp(`${productName}`)
+    }
+
+    // if (stockStart & stockEnd) {
+    //   conditionFind.stock = {
+    //     $expr: {
+    //       $and: [
+    //         { stock: { $gte: Number(stockStart) } },
+    //         { stock: { $lte: Number(stockEnd) } },
+    //       ]
+    //     }
+    //   }
+    // } else if (stockStart) {
+    //   conditionFind.stock = {
+    //     $expr: {
+    //       $and: [
+    //         { stock: { $gte: Number(stockStart) } },
+    //       ]
+    //     }
+    //   }
+    // } else if (stockEnd) {
+    //   conditionFind.stock = {
+    //     $expr: {
+    //       $and: [
+    //         { stock: { $lte: Number(stockEnd) } },
+    //       ]
+    //     }
+    //   }
+    // }
+
+    console.log('««««« conditionFind »»»»»', conditionFind);
+
+    const results = await Product
+    .find(conditionFind)
+    .populate('category')
+    .populate('supplier')
+    .skip(skip)
+    .limit(2)
+    .lean({ virtuals: true });
+
+    const totalResults = await Product
+    .countDocuments(conditionFind)
+
+    res.json({
+      payload: results,
+      total: totalResults,
+    });
+  } catch (error) {
+    console.log('««««« error »»»»»', error);
+    res.status(500).json({ ok: false, error });
+  }
+});
+
 // Get by id
 router.get('/:id', async (req, res, next) => {
   const validationSchema = yup.object().shape({
